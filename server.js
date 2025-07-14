@@ -22,7 +22,7 @@ let users = [];
 let chatRooms = [
   {
     id: 'room1',
-    name: 'General',
+    name: 'yuhangLiu',
     description: 'General discussion for everyone',
     participants: [],
     unreadCount: 0,
@@ -33,7 +33,7 @@ let chatRooms = [
   },
   {
     id: 'room2',
-    name: 'Tech Talk',
+    name: '11111111111',
     description: 'Discuss technology and programming',
     participants: [],
     unreadCount: 0,
@@ -44,7 +44,7 @@ let chatRooms = [
   },
   {
     id: 'room3',
-    name: 'Random',
+    name: '3333333333',
     description: 'Random conversations',
     participants: [],
     unreadCount: 0,
@@ -58,7 +58,7 @@ let chatRooms = [
 let messages = [
   {
     id: 'welcome1',
-    content: '欢迎来到General聊天室！👋',
+    content: '111111111111111111',
     senderId: 'system',
     senderName: 'System',
     timestamp: Date.now() - 3600000,
@@ -67,7 +67,7 @@ let messages = [
   },
   {
     id: 'welcome2',
-    content: '这里是技术讨论区，欢迎分享你的见解！💻',
+    content: '22222222222222222',
     senderId: 'system',
     senderName: 'System',
     timestamp: Date.now() - 1800000,
@@ -242,6 +242,88 @@ app.post('/api/auth/register', (req, res) => {
 
   } catch (error) {
     console.error('❌ Registration error:', error);
+    res.status(500).json({
+      success: false,
+      error: '服务器内部错误'
+    });
+  }
+});
+
+// 删除用户账号
+app.delete('/api/auth/user', (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // 输入验证
+    if (!username || typeof username !== 'string' || username.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: '用户名不能为空'
+      });
+    }
+
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: '密码至少需要6位字符'
+      });
+    }
+
+    const trimmedUsername = username.trim();
+
+    // 检查用户是否存在
+    const existingUser = users.find(u => u.username === trimmedUsername);
+    if (!existingUser) {
+      return res.status(404).json({
+        success: false,
+        error: '用户不存在'
+      });
+    }
+
+    // 验证密码（简单匹配，实际应用中应该使用哈希验证）
+    if (existingUser.password !== password) {
+      return res.status(401).json({
+        success: false,
+        error: '密码错误'
+      });
+    }
+
+    // 删除用户相关数据
+    const userIndex = users.findIndex(u => u.username === trimmedUsername);
+    if (userIndex !== -1) {
+      users.splice(userIndex, 1);
+    }
+
+    // 删除用户的消息
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].senderName === trimmedUsername) {
+        messages.splice(i, 1);
+      }
+    }
+
+    // 更新聊天室中的参与者列表
+    chatRooms.forEach(room => {
+      if (room.participants) {
+        const participantIndex = room.participants.indexOf(trimmedUsername);
+        if (participantIndex !== -1) {
+          room.participants.splice(participantIndex, 1);
+        }
+      }
+    });
+
+    console.log(`✅ User deleted successfully: ${trimmedUsername}`);
+    
+    res.json({
+      success: true,
+      message: '用户删除成功',
+      data: {
+        username: trimmedUsername,
+        deletedAt: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Delete user error:', error);
     res.status(500).json({
       success: false,
       error: '服务器内部错误'
